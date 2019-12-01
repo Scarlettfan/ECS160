@@ -133,7 +133,7 @@ int main(int argc, const char *argv[])
         exit(0);
     }
     //read files
-    FILE *stream = fopen("cl-tweets-short-clean.csv", "r");
+    FILE *stream = fopen(argv[1], "r");
 
     //line: to store each line
     //nameTweetCount: store tweeters and their tweets count, unsorted

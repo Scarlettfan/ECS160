@@ -321,11 +321,11 @@ int main(int argc, const char *argv[])
                 }
             }
         }
-        // else
-        // {
-        //     printf("Invalid name field");
-        //     exit(-1);
-        // }
+        else
+        {
+            printf("Invalid name field");
+            exit(-1);
+        }
     }
 
     //sort the list

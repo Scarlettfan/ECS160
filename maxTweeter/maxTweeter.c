@@ -46,7 +46,7 @@ void Mysort(void)
 }
 
 //to seperate the form of "**,,**"
-char *Mystrtok(char *string, char *seperator)
+char* Mystrtok(char *string, char *seperator)
 {
     static char *source = 0;
     char *p, *token = 0;
@@ -124,6 +124,39 @@ void printData(nameTweetsPair *list)
     }
 }
 
+int nextComma(char* r, int len, int s)
+{
+    if (s >= len)
+        return -1;
+    int i;
+    for(i=s;i<len;i++) {
+        if (r[i] == ',')
+            return i;
+    }
+    return i;
+}
+
+void strip(char *s, int l)
+{
+    
+}
+
+int parseRow(char* row, int len, char* cols[], int* size)
+{
+    int _size = 0;
+    char* _row = strdup(row);
+    int col_i = 0;
+    int i = 0;
+    int c;
+
+    do {
+        c = nextComma(row, len, i);
+        char* cur_col = strndup(row + i,c-i);
+        printf("%s, %d\n", cur_col,cur_col[0]);
+        i = c + 1;
+    }while(c < len);
+}
+
 int main(int argc, const char *argv[])
 {
     //check for input
@@ -141,7 +174,7 @@ int main(int argc, const char *argv[])
 
     //getting the header line
     fgets(line, numChar, stream);
-
+    parseRow(line,strlen(line),NULL,0);
     /************************* check headers *****************************/
     /************************* check headers *****************************/
     /************************* check headers *****************************/

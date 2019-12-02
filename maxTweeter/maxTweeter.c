@@ -187,25 +187,47 @@ int nextComma(char* r, int len, int s)
     return i;
 }
 
-void strip(char *s, int l)
+char* strip(char *s, int l)
 {
-    
+    for(int i=l-1;i>=0;i--)
+    {
+        if (s[i] == ' ' || s[i] == '\n' || s[i] == '\r')
+            s[i] = '\0';
+    }
+    while (s[0] == ' ' || s[0] == '\n' || s[0] == '\r')
+        s++;
+    return s;
 }
-
-int parseRow(char* row, int len, char* cols[], int* size)
+int parseRow(char* row, int len, char* cols[],int qtd[], int* size)
 {
-    int _size = 0;
-    char* _row = strdup(row);
-    int col_i = 0;
+    *size = 0;
     int i = 0;
     int c;
 
     do {
         c = nextComma(row, len, i);
         char* cur_col = strndup(row + i,c-i);
-        printf("%s, %d\n", cur_col,cur_col[0]);
+        cur_col = strip(cur_col,strlen(cur_col));
+        int isqtd = 0;
+        if (cur_col[0] == '\"' && cur_col[strlen(cur_col) - 1] == '\"') {
+            cur_col = removeQuote(cur_col);
+            isqtd = 1;
+        }
+        qtd[(*size)] = isqtd;
+        cols[(*size)++] = cur_col;
         i = c + 1;
     }while(c < len);
+    return 1;
+}
+
+int findIndex(char* name, char* cols[], int qtd[], int size)
+{
+    for (int i=0;i<size;i++) {
+        if (strcmp(name,cols[i]) == 0) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 int main(int argc, const char *argv[])
@@ -221,17 +243,23 @@ int main(int argc, const char *argv[])
 
     //line: to store each line
     char line[numChar];
-    int namePos = 0;
-    int headerHasQuotes = 0;
+    int nameIdx = -1;
 
     //getting the header line
     fgets(line, numChar, stream);
-    parseRow(line,strlen(line),NULL,0);
-    /************************* check headers *****************************/
+    if (strlen(line) <= 0) {
+        printf("Invalid Header Format");
+        exit(-1);
+    }
+    char* header[1024];
+    int isHeaderQuoted[1024];
+    int headerSize;
+    parseRow(line,strlen(line),header,isHeaderQuoted,&headerSize);
 
     /************************* check headers *****************************/
-    namePos = getContentIndex(strdup(line), &headerHasQuotes);
-    if (namePos == -1)
+
+    nameIdx = findIndex("name", header, isHeaderQuoted, headerSize);
+    if (nameIdx == -1)
     {
         printf("Invalid Header Format");
         exit(-1);
@@ -239,71 +267,56 @@ int main(int argc, const char *argv[])
     //read all the remaining lines
     while (fgets(line, numChar, stream))
     {
-
+        char* cells[1024];
+        int isQuoted[1024];
+        int rowSize;
+        parseRow(line,strlen(line),cells,isQuoted,&rowSize);
         //check valid line
+        if (rowSize != headerSize) {
+            printf("Invalid Input Format\n");
+            exit(-1);
+        }
         //when valid
-        char *token = Mystrtok(strdup(line), ",");
-        int count = 0;
-        while (token)
+        char* nameField = cells[nameIdx];
+        if (strlen(nameField) > 0)
         {
-            int nameExists = -1;
-            char **candidate = 0;
-            // int validText = 0;
-            if (count == namePos)
-            {
-                if (token)
-                {
-                    //************************** check contains quotation marks, if does, remove****************/
+            //************************** check contains quotation marks, if does, remove****************/
 
-                    if (headerHasQuotes && (useQuote(token) == 1))
-                    {
-                        token = removeQuote(token);
-                    }
-                    else if (headerHasQuotes && (useQuote(token) == 0))
-                    {
-                        printf("Invalid Name Format");
-                    }
-                    else if (!headerHasQuotes && (useQuote(token) == 1))
-                    {
-                        printf("Invalid Name Format");
-                    }
-                    else if ((useQuote(token) == -1))
-                    {
-                        printf("Invalid Name Format");
-                    }
-
-                    //check dups
-                    //if name has been inserted, return the idex in nameTweetCount
-                    //if its a new name, return -1
-                    nameExists = isContain(token);
-                    candidate = &token;
-                    if (nameExists >= 0)
-                    {
-                        //if contains
-                        //increnment the tweets count of that name
-                        nameTweetCount[nameExists].tweetsCount += 1;
-                    }
-                    else if (nameExists == -1)
-                    {
-                        //add the name to the list
-                        //increment the count
-                        if (*candidate != NULL)
-                        {
-                            nameTweetCount[iterator].name = *candidate;
-                            nameTweetCount[iterator].tweetsCount = 1;
-                            iterator++;
-                        }
-                    }
-                }
-                else
-                {
-                    printf("Invalid name field");
-                    return -1;
-                }
+            if (isQuoted[nameIdx] != isHeaderQuoted[nameIdx]) {
+                //printf("%d, %d, %d\n",nameIdx,isQuoted[nameIdx],isHeaderQuoted[nameIdx]);
+                printf("Invalid Input Format\n");
+                exit(-1);
+            }
+            if (isQuoted[nameIdx]) {
+                nameField = removeQuote(nameField);
             }
 
-            token = Mystrtok(NULL, ",");
-            ++count;
+            //check dups
+            //if name has been inserted, return the idex in nameTweetCount
+            //if its a new name, return -1
+            int nameExists = isContain(nameField);
+            if (nameExists >= 0)
+            {
+                //if contains
+                //increnment the tweets count of that name
+                nameTweetCount[nameExists].tweetsCount += 1;
+            }
+            else if (nameExists == -1)
+            {
+                //add the name to the list
+                //increment the count
+                if (nameField != NULL)
+                {
+                    nameTweetCount[iterator].name = nameField;
+                    nameTweetCount[iterator].tweetsCount = 1;
+                    iterator++;
+                }
+            }
+        }
+        else
+        {
+            printf("Invalid name field");
+            exit(-1);
         }
     }
 

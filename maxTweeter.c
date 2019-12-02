@@ -266,7 +266,8 @@ int main(int argc, const char *argv[])
     }
     if (isFault) {
         freeMem();
-        exit(-1);
+	fclose(stream);
+	exit(-1);
     }
     //sort the list
     Mysort();
@@ -283,6 +284,9 @@ int main(int argc, const char *argv[])
         topTen[i] = nameTweetCount[i];
     }
     printData(topTen, n);
+    
+    fclose(stream);
     freeMem();
+
     return 0;
 }

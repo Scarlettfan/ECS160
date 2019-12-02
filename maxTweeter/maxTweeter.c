@@ -99,15 +99,15 @@ int useQuote(char *token)
 char *removeQuote(char *name)
 {
     char *token = name;
-    printf("token: %s", token);
+    //printf("token: %s", token);
     if (token != NULL)
     {
         if (token[0] == '"' && token[strlen(token) - 1] == '"')
         {
             ++token;
-            token[strlen(token) - 1] = 0;
+            token[strlen(token) - 1] = '\0';
         }
-        else if (token[0] != '"' && token[strlen(token) - 1] != '"')
+        else
         {
             return name;
         }
@@ -143,8 +143,6 @@ int isContain(char *names)
 {
     if (names)
     {
-
-        // printf("contains: %s", names);
         for (int i = 0; i < iterator; i++)
         {
             if (strlen(nameTweetCount[i].name) == strlen(names) && !strcmp(nameTweetCount[i].name, names))

@@ -72,21 +72,72 @@ char *Mystrtok(char *string, char *seperator)
     return token;
 }
 
-int getContentIndex(char *header, char *str)
+int useQuote(char *token)
+{
+    //using quote
+    if (token[0] == '"' && token[strlen(token) - 1] == '"')
+    {
+        return 1;
+    }
+    //not using quote
+    else if (token[0] != '"' && token[strlen(token) - 1] != '"')
+    {
+        return 0;
+    }
+    //invalid
+    else if (token[0] == '"' && token[strlen(token) - 1] != '"')
+    {
+        return -1;
+    }
+    //invalid
+    else if (token[0] != '"' && token[strlen(token) - 1] == '"')
+    {
+        return -1;
+    }
+    return -1;
+}
+char *removeQuote(char *name)
+{
+    char *token = name;
+    printf("token: %s", token);
+    if (token != NULL)
+    {
+        if (token[0] == '"' && token[strlen(token) - 1] == '"')
+        {
+            ++token;
+            token[strlen(token) - 1] = 0;
+        }
+        else if (token[0] != '"' && token[strlen(token) - 1] != '"')
+        {
+            return name;
+        }
+    }
+    return token;
+}
+
+int getContentIndex(char *header, int *hasQuotes)
 {
     char *word = Mystrtok(header, ",");
     int index = 0;
     while (word != NULL)
     {
-        // if find the col position, break
-        if (!strcmp(str, word))
+        if (useQuote(word))
         {
-            return index;
+            *hasQuotes = 1;
         }
+        else if (!useQuote(word))
+        {
+            *hasQuotes = 0;
+        }
+        // if find the col position, break
+        if (*hasQuotes == 0 && strlen(word) == strlen("name") && !strcmp(word, "name"))
+            return index;
+        if (*hasQuotes == 1 && strlen(word) == strlen("\"name\"") && !strcmp(word, "\"name\""))
+            return index;
         word = Mystrtok(NULL, ",");
         index++;
     }
-    return index;
+    return -1;
 }
 int isContain(char *names)
 {
@@ -96,7 +147,7 @@ int isContain(char *names)
         // printf("contains: %s", names);
         for (int i = 0; i < iterator; i++)
         {
-            if (!strcmp(nameTweetCount[i].name, names))
+            if (strlen(nameTweetCount[i].name) == strlen(names) && !strcmp(nameTweetCount[i].name, names))
             {
                 return i;
             }
@@ -120,7 +171,7 @@ void printData(nameTweetsPair *list)
     for (int i = 0; i < 10; i++)
     {
         if (list[i].name && list[i].tweetsCount)
-            printf("name: %s        count: %d\n", list[i].name, list[i].tweetsCount);
+            printf("%s: %d\n", list[i].name, list[i].tweetsCount);
     }
 }
 
@@ -130,25 +181,28 @@ int main(int argc, const char *argv[])
     if (argc != 2)
     {
         printf("Invalid Input Format");
-        exit(0);
+        exit(-1);
     }
     //read files
-    FILE *stream = fopen("cl-tweets-short-clean.csv", "r");
+    FILE *stream = fopen(argv[1], "r");
 
     //line: to store each line
-    //nameTweetCount: store tweeters and their tweets count, unsorted
     char line[numChar];
+    int namePos = 0;
+    int headerHasQuotes = 0;
 
     //getting the header line
     fgets(line, numChar, stream);
 
     /************************* check headers *****************************/
-    /************************* check headers *****************************/
-    /************************* check headers *****************************/
 
-    int namePos = getContentIndex(strdup(line), "name");
-    int textPos = getContentIndex(strdup(line), "text");
-
+    /************************* check headers *****************************/
+    namePos = getContentIndex(strdup(line), &headerHasQuotes);
+    if (namePos == -1)
+    {
+        printf("Invalid Header Format");
+        exit(-1);
+    }
     //read all the remaining lines
     while (fgets(line, numChar, stream))
     {
@@ -161,20 +215,33 @@ int main(int argc, const char *argv[])
         {
             int nameExists = -1;
             char **candidate = 0;
-            int validText = 0;
+            // int validText = 0;
             if (count == namePos)
             {
-
-                //check dups
-                //if name has been inserted, return the idex in nameTweetCount
-                //if its a new name, return -1
                 if (token)
                 {
                     //************************** check contains quotation marks, if does, remove****************/
-                    //************************** check contains quotation marks, if does, remove****************/
-                    //************************** check contains quotation marks, if does, remove****************/
-                    //************************** check contains quotation marks, if does, remove****************/
 
+                    if (headerHasQuotes && (useQuote(token) == 1))
+                    {
+                        token = removeQuote(token);
+                    }
+                    else if (headerHasQuotes && (useQuote(token) == 0))
+                    {
+                        printf("Invalid Name Format");
+                    }
+                    else if (!headerHasQuotes && (useQuote(token) == 1))
+                    {
+                        printf("Invalid Name Format");
+                    }
+                    else if ((useQuote(token) == -1))
+                    {
+                        printf("Invalid Name Format");
+                    }
+
+                    //check dups
+                    //if name has been inserted, return the idex in nameTweetCount
+                    //if its a new name, return -1
                     nameExists = isContain(token);
                     candidate = &token;
                     if (nameExists >= 0)
@@ -197,27 +264,10 @@ int main(int argc, const char *argv[])
                 }
                 else
                 {
-                    printf("empty name field");
+                    printf("Invalid name field");
                     return -1;
                 }
             }
-            /************************** check text field?? ****************************/
-            /************************** check text field?? ****************************/
-            /************************** check text field?? ****************************/
-
-            // if (count == textPos)
-            // {
-            //     //check valid text conetent
-            //     if (token)
-            //     {
-            //         validText = isTextValid(token);
-            //     }
-            //     else
-            //     {
-            //         printf("empty text field");
-            //         return -1;
-            //     }
-            // }
 
             token = Mystrtok(NULL, ",");
             ++count;

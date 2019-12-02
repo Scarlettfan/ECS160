@@ -46,7 +46,7 @@ void Mysort(void)
 }
 
 //to seperate the form of "**,,**"
-char* Mystrtok(char *string, char *seperator)
+char *Mystrtok(char *string, char *seperator)
 {
     static char *source = 0;
     char *p, *token = 0;
@@ -99,7 +99,6 @@ int useQuote(char *token)
 char *removeQuote(char *name)
 {
     char *token = name;
-    printf("token: %s", token);
     if (token != NULL)
     {
         if (token[0] == '"' && token[strlen(token) - 1] == '"')
@@ -139,6 +138,7 @@ int getContentIndex(char *header, int *hasQuotes)
     }
     return -1;
 }
+
 int isContain(char *names)
 {
     if (names)
@@ -166,30 +166,31 @@ bool isTextValid(char *text)
     return false;
 }
 
-void printData(nameTweetsPair *list)
+void printData(nameTweetsPair *list, int n)
 {
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < n; i++)
     {
         if (list[i].name && list[i].tweetsCount)
             printf("%s: %d\n", list[i].name, list[i].tweetsCount);
     }
 }
 
-int nextComma(char* r, int len, int s)
+int nextComma(char *r, int len, int s)
 {
     if (s >= len)
         return -1;
     int i;
-    for(i=s;i<len;i++) {
+    for (i = s; i < len; i++)
+    {
         if (r[i] == ',')
             return i;
     }
     return i;
 }
 
-char* strip(char *s, int l)
+char *strip(char *s, int l)
 {
-    for(int i=l-1;i>=0;i--)
+    for (int i = l - 1; i >= 0; i--)
     {
         if (s[i] == ' ' || s[i] == '\n' || s[i] == '\r')
             s[i] = '\0';
@@ -198,32 +199,36 @@ char* strip(char *s, int l)
         s++;
     return s;
 }
-int parseRow(char* row, int len, char* cols[],int qtd[], int* size)
+int parseRow(char *row, int len, char *cols[], int qtd[], int *size)
 {
     *size = 0;
     int i = 0;
     int c;
 
-    do {
+    do
+    {
         c = nextComma(row, len, i);
-        char* cur_col = strndup(row + i,c-i);
-        cur_col = strip(cur_col,strlen(cur_col));
+        char *cur_col = strndup(row + i, c - i);
+        cur_col = strip(cur_col, strlen(cur_col));
         int isqtd = 0;
-        if (cur_col[0] == '\"' && cur_col[strlen(cur_col) - 1] == '\"') {
+        if (cur_col[0] == '\"' && cur_col[strlen(cur_col) - 1] == '\"')
+        {
             cur_col = removeQuote(cur_col);
             isqtd = 1;
         }
         qtd[(*size)] = isqtd;
         cols[(*size)++] = cur_col;
         i = c + 1;
-    }while(c < len);
+    } while (c < len);
     return 1;
 }
 
-int findIndex(char* name, char* cols[], int qtd[], int size)
+int findIndex(char *name, char *cols[], int qtd[], int size)
 {
-    for (int i=0;i<size;i++) {
-        if (strcmp(name,cols[i]) == 0) {
+    for (int i = 0; i < size; i++)
+    {
+        if (strcmp(name, cols[i]) == 0)
+        {
             return i;
         }
     }
@@ -247,14 +252,15 @@ int main(int argc, const char *argv[])
 
     //getting the header line
     fgets(line, numChar, stream);
-    if (strlen(line) <= 0) {
+    if (strlen(line) <= 0)
+    {
         printf("Invalid Header Format");
         exit(-1);
     }
-    char* header[1024];
+    char *header[1024];
     int isHeaderQuoted[1024];
     int headerSize;
-    parseRow(line,strlen(line),header,isHeaderQuoted,&headerSize);
+    parseRow(line, strlen(line), header, isHeaderQuoted, &headerSize);
 
     /************************* check headers *****************************/
 
@@ -267,27 +273,29 @@ int main(int argc, const char *argv[])
     //read all the remaining lines
     while (fgets(line, numChar, stream))
     {
-        char* cells[1024];
+        char *cells[1024];
         int isQuoted[1024];
         int rowSize;
-        parseRow(line,strlen(line),cells,isQuoted,&rowSize);
+        parseRow(line, strlen(line), cells, isQuoted, &rowSize);
         //check valid line
-        if (rowSize != headerSize) {
+        if (rowSize != headerSize)
+        {
             printf("Invalid Input Format\n");
             exit(-1);
         }
         //when valid
-        char* nameField = cells[nameIdx];
+        char *nameField = cells[nameIdx];
         if (strlen(nameField) > 0)
         {
             //************************** check contains quotation marks, if does, remove****************/
 
-            if (isQuoted[nameIdx] != isHeaderQuoted[nameIdx]) {
-                //printf("%d, %d, %d\n",nameIdx,isQuoted[nameIdx],isHeaderQuoted[nameIdx]);
+            if (isQuoted[nameIdx] != isHeaderQuoted[nameIdx])
+            {
                 printf("Invalid Input Format\n");
                 exit(-1);
             }
-            if (isQuoted[nameIdx]) {
+            if (isQuoted[nameIdx])
+            {
                 nameField = removeQuote(nameField);
             }
 
@@ -313,21 +321,26 @@ int main(int argc, const char *argv[])
                 }
             }
         }
-        else
-        {
-            printf("Invalid name field");
-            exit(-1);
-        }
+        // else
+        // {
+        //     printf("Invalid name field");
+        //     exit(-1);
+        // }
     }
 
     //sort the list
     Mysort();
 
     //take top ten
-    nameTweetsPair topTen[10];
-    for (int i = 0; i < 10; i++)
+    int n = 10;
+    if (n > iterator)
+    {
+        n = iterator;
+    }
+    nameTweetsPair topTen[n];
+    for (int i = 0; i < n; i++)
     {
         topTen[i] = nameTweetCount[i];
     }
-    printData(topTen);
+    printData(topTen, n);
 }
